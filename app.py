@@ -1,52 +1,63 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
+import logging
+from flask import Flask, render_template, request, redirect
 import stripe
+from dotenv import load_dotenv
+
+# Yerelde .env dosyasını yükle (Render’da .env kullanılmaz)
+load_dotenv()
 
 app = Flask(__name__)
+app.logger.setLevel(logging.DEBUG)
 
-# Stripe anahtarları (Render'da ortam değişkeni olarak ekleyin)
+# Stripe gizli anahtarını ortam değişkeninden al
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-# Desteklenen oyunlar ve paketler (TL cinsinden)
+# Oyun ve paket bilgileri (TL cinsinden)
 games = ["Valorant", "CS2", "LoL"]
 packages = [
-    {"name": "Basit", "price_tl": 400,  "features": ["Canlı Ders"]},
-    {"name": "Orta",  "price_tl": 600,  "features": ["Canlı Ders", "PDF Rehber"]},
+    {"name": "Basit", "price_tl": 400, "features": ["Canlı Ders"]},
+    {"name": "Orta",  "price_tl": 600, "features": ["Canlı Ders", "PDF Rehber"]},
     {"name": "Pro",   "price_tl": 1000, "features": ["Canlı Ders", "PDF Rehber", "Özel Koçluk"]}
 ]
 
 @app.route("/")
 def index():
-    # Publishable key da şablonda JS için lazım olabilir
-    publishable_key = os.environ.get("STRIPE_PUBLISHABLE_KEY")
-    return render_template("index.html", games=games, packages=packages, publishable_key=publishable_key)
+    return render_template("index.html", games=games, packages=packages)
 
 @app.route("/checkout", methods=["POST"])
 def checkout():
-    game   = request.form.get("game")
-    pkg    = request.form.get("package")
+    game = request.form.get("game")
+    pkg  = request.form.get("package")
+    app.logger.debug(f"Checkout isteği: oyun={game}, paket={pkg}")
+
     package = next((p for p in packages if p["name"] == pkg), None)
     if not game or not package:
+        app.logger.error("Geçersiz oyun veya paket seçimi")
         return "Oyun veya paket seçimi hatalı.", 400
 
-    # Checkout Session oluştur
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{
-            "price_data": {
-                "currency": "try",
-                "product_data": {
-                    "name": f"{game} - {package['name']} Koçluk Paketi"
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "try",
+                    "product_data": {
+                        "name": f"{game} – {package['name']} Koçluk Paketi"
+                    },
+                    "unit_amount": package["price_tl"] * 100
                 },
-                "unit_amount": package["price_tl"] * 100
-            },
-            "quantity": 1
-        }],
-        mode="payment",
-        success_url=request.url_root + "success",
-        cancel_url=request.url_root + "cancel"
-    )
-    return redirect(session.url, code=303)
+                "quantity": 1
+            }],
+            mode="payment",
+            success_url=request.url_root + "success",
+            cancel_url=request.url_root + "cancel"
+        )
+        return redirect(session.url, code=303)
+
+    except Exception as e:
+        app.logger.error(f"Stripe Checkout Hatası: {e}")
+        return f"Ödeme sırasında hata oluştu: {e}", 500
 
 @app.route("/success")
 def success():

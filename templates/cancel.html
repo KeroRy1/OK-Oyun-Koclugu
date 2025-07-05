@@ -1,1 +1,7 @@
-
+{% extends 'base.html' %}
+{% block title %}İptal Edildi{% endblock %}
+{% block content %}
+<h2>⚠️ Ödeme İptal Edildi</h2>
+<p>İşlem tamamlanmadı. Lütfen tekrar deneyin veya bizimle iletişime geçin.</p>
+<a href="{{ url_for('index') }}">Ana Sayfaya Dön</a>
+{% endblock %}

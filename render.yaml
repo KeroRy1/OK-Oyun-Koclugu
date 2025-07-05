@@ -7,5 +7,3 @@ services:
     envVars:
       - key: STRIPE_SECRET_KEY
         value: sk_test_YOUR_SECRET_KEY
-      - key: STRIPE_PUBLISHABLE_KEY
-        value: pk_test_YOUR_PUBLISHABLE_KEY

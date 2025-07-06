@@ -12,14 +12,14 @@
 <h3>Siparişler</h3>
 <ul>
     {% for order in orders %}
-        <li>Kullanıcı ID {{ order.user_id }} → Koç ID {{ order.coach_id }} → {{ order.price }}₺</li>
+        <li>Kullanıcı {{ order.user_id }} → Koç {{ order.coach_id }} → {{ order.price }}₺</li>
     {% endfor %}
 </ul>
 
 <h3>Geri Bildirimler</h3>
 <ul>
     {% for f in feedbacks %}
-        <li>Koç ID {{ f.coach_id }}: {{ f.rating }} yıldız – "{{ f.comment }}"</li>
+        <li>Koç {{ f.coach_id }}: {{ f.rating }} yıldız – "{{ f.comment }}"</li>
     {% endfor %}
 </ul>
 {% endblock %}

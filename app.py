@@ -22,8 +22,8 @@ class Coach(db.Model):
     game = db.Column(db.String(50), nullable=False)
     level = db.Column(db.String(50), nullable=False)
     availability = db.Column(db.String(500), nullable=False)
-    contact = db.Column(db.Column(db.String(200), nullable=False))
-
+    contact = db.Column(db.String(200), nullable=False)  # ✅ doğru
+    
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.String(200), unique=True, nullable=False)

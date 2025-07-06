@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Paneli</h2>
+
+<h3>Koçlar</h3>
+<ul>
+    {% for coach in coaches %}
+        <li>{{ coach.name }} – {{ coach.game }} ({{ coach.level }})</li>
+    {% endfor %}
+</ul>
+
+<h3>Siparişler</h3>
+<ul>
+    {% for order in orders %}
+        <li>Kullanıcı ID {{ order.user_id }} → Koç ID {{ order.coach_id }} → {{ order.price }}₺</li>
+    {% endfor %}
+</ul>
+
+<h3>Geri Bildirimler</h3>
+<ul>
+    {% for f in feedbacks %}
+        <li>Koç ID {{ f.coach_id }}: {{ f.rating }} yıldız – "{{ f.comment }}"</li>
+    {% endfor %}
+</ul>
+{% endblock %}

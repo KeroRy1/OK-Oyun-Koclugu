@@ -30,11 +30,12 @@ def checkout(coach_id):
     coach = Coach.query.get_or_404(coach_id)
     user_id = session.get("user_id", 1)
     selected_time = request.form.get("time")
+    selected_package = request.form.get("package")
 
     if not selected_time or int(selected_time[:2]) < 8:
         return "Geçersiz saat seçimi.", 400
 
-    price = calculate_price(coach.level, is_first_purchase(user_id))
+    price = calculate_price(selected_package, is_first_purchase(user_id))
 
     try:
         checkout_session = stripe.checkout.Session.create(
@@ -43,7 +44,7 @@ def checkout(coach_id):
                 "price_data": {
                     "currency": "try",
                     "product_data": {
-                        "name": f"{coach.game} - {coach.level} ({selected_time})",
+                        "name": f"{coach.game} – {selected_package} ({selected_time})",
                         "description": f"Koç: {coach.name}"
                     },
                     "unit_amount": int(price * 100)

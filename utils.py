@@ -1,11 +1,11 @@
-def calculate_price(level, is_first):
-    base_prices = {
-        "Basit": 50,
-        "Orta": 100,
-        "Pro": 150,
-        "Oyun Ustası": 200
+def calculate_price(package, is_first):
+    prices = {
+        "Basit": 400,
+        "Orta": 600,
+        "Pro": 1000,
+        "Oyun Ustası": 1500
     }
-    price = base_prices.get(level, 100)
+    price = prices.get(package, 600)
     return price * 0.8 if is_first else price
 
 def is_first_purchase(user_id):

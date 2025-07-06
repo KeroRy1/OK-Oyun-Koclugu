@@ -12,7 +12,7 @@ db.init_app(app)
 
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
-# ✅ Tabloları uygulama başlarken bir kez oluştur
+# ✅ Veritabanı tablolarını oluştur
 with app.app_context():
     db.create_all()
 
@@ -30,38 +30,45 @@ def coach_profile(coach_id):
 @app.route("/checkout/<int:coach_id>", methods=["POST"])
 def checkout(coach_id):
     coach = Coach.query.get_or_404(coach_id)
-    user_id = session.get("user_id", 1)
+    user_id = session.get("user_id", 1)  # Geliştirme için sabit kullanıcı
     price = calculate_price(coach.level, is_first_purchase(user_id))
 
-    session_data = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{
-            "price_data": {
-                "currency": "try",
-                "product_data": {
-                    "name": f"{coach.game} - {coach.level}",
-                    "description": f"Koç: {coach.name}"
+    try:
+        session_data = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "try",
+                    "product_data": {
+                        "name": f"{coach.game} - {coach.level}",
+                        "description": f"Koç: {coach.name}"
+                    },
+                    "unit_amount": int(price * 100)
                 },
-                "unit_amount": int(price * 100)
-            },
-            "quantity": 1
-        }],
-        mode="payment",
-        success_url=url_for("waiting_room", coach_id=coach.id, _external=True),
-        cancel_url=url_for("index", _external=True)
-    )
+                "quantity": 1
+            }],
+            mode="payment",
+            success_url=url_for("waiting_room", coach_id=coach.id, _external=True),
+            cancel_url=url_for("index", _external=True)
+        )
 
-    new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=session_data.id)
-    db.session.add(new_order)
-    db.session.commit()
+        new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=session_data.id)
+        db.session.add(new_order)
+        db.session.commit()
 
-    return redirect(session_data.url)
+        return redirect(session_data.url)
+
+    except Exception as e:
+        return f"Stripe Checkout hatası: {str(e)}"
 
 @app.route("/waiting/<int:coach_id>")
 def waiting_room(coach_id):
     coach = Coach.query.get_or_404(coach_id)
-    zoom_link = create_zoom_meeting(coach.zoom_email)
-    return redirect(zoom_link)
+    try:
+        zoom_link = create_zoom_meeting(coach.zoom_email)
+        return redirect(zoom_link)
+    except Exception as e:
+        return f"Zoom toplantısı oluşturulamadı: {str(e)}"
 
 @app.route("/submit-feedback/<int:coach_id>", methods=["POST"])
 def submit_feedback(coach_id):

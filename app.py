@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-from models import db, Coach, Order, Feedback, User
+from models import db, Coach, Order, Feedback
 from forms import FeedbackForm
 from utils import calculate_price, is_first_purchase, create_zoom_meeting
 from config import Config
@@ -9,10 +9,8 @@ import os
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
-
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
-# Veritabanı tablolarını oluştur
 with app.app_context():
     db.create_all()
 
@@ -31,6 +29,11 @@ def coach_profile(coach_id):
 def checkout(coach_id):
     coach = Coach.query.get_or_404(coach_id)
     user_id = session.get("user_id", 1)
+    selected_time = request.form.get("time")
+
+    if not selected_time or int(selected_time[:2]) < 8:
+        return "Geçersiz saat seçimi.", 400
+
     price = calculate_price(coach.level, is_first_purchase(user_id))
 
     try:
@@ -40,7 +43,7 @@ def checkout(coach_id):
                 "price_data": {
                     "currency": "try",
                     "product_data": {
-                        "name": f"{coach.game} - {coach.level}",
+                        "name": f"{coach.game} - {coach.level} ({selected_time})",
                         "description": f"Koç: {coach.name}"
                     },
                     "unit_amount": int(price * 100)

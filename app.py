@@ -1,117 +1,80 @@
-import os
-import logging
-from flask import Flask, render_template, request, redirect
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, request, redirect, url_for, session
+from models import db, Coach, Order, Feedback, User
+from forms import FeedbackForm
+from utils import calculate_price, is_first_purchase, create_zoom_meeting
+from config import Config
 import stripe
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
-app.logger.setLevel(logging.DEBUG)
+app.config.from_object(Config)
+db.init_app(app)
 
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
-class Coach(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    game = db.Column(db.String(50), nullable=False)
-    level = db.Column(db.String(50), nullable=False)
-    availability = db.Column(db.String(500), nullable=False)
-    contact = db.Column(db.String(200), nullable=False)  # ✅ doğru
-    
-class Order(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(200), unique=True, nullable=False)
-    game = db.Column(db.String(50), nullable=False)
-    package = db.Column(db.String(50), nullable=False)
-    time_slot = db.Column(db.String(50), nullable=False)
-    coach_id = db.Column(db.Integer, db.ForeignKey('coach.id'))
-    coach = db.relationship('Coach')
-
-TIME_SLOTS = [
-    "16:00-17:00", "17:00-18:00", "18:00-19:00",
-    "19:00-20:00", "20:00-21:00", "21:00-22:00"
-]
-
-games = ["Valorant", "CS2", "LoL"]
-packages = [
-    {"name": "Basit",  "price_tl": 400,  "features": ["Canlı Ders"]},
-    {"name": "Orta",   "price_tl": 600,  "features": ["Canlı Ders", "PDF Rehber"]},
-    {"name": "Pro",    "price_tl": 1000, "features": ["Canlı Ders", "PDF Rehber", "Özel Koçluk"]}
-]
-
-def seed_coaches():
-    if not Coach.query.first():
-        sample_coaches = [
-            Coach(name="Ali",    game="Valorant", level="Basit",  availability="18:00-19:00,20:00-21:00", contact="discord.gg/ali"),
-            Coach(name="Ayşe",   game="CS2",      level="Basit",  availability="19:00-20:00,21:00-22:00", contact="discord.gg/ayse"),
-            Coach(name="Mehmet", game="LoL",      level="Basit",  availability="18:00-19:00,21:00-22:00", contact="discord.gg/mehmet"),
-            Coach(name="Burcu",  game="Valorant", level="Orta",   availability="17:00-18:00,19:00-20:00", contact="discord.gg/burcu"),
-            Coach(name="Cem",    game="CS2",      level="Orta",   availability="18:00-19:00,20:00-21:00", contact="discord.gg/cem"),
-            Coach(name="Deniz",  game="LoL",      level="Orta",   availability="17:00-18:00,21:00-22:00", contact="discord.gg/deniz"),
-            Coach(name="Elif",   game="Valorant", level="Pro",    availability="16:00-17:00,18:00-19:00", contact="discord.gg/elif"),
-            Coach(name="Fatih",  game="CS2",      level="Pro",    availability="17:00-18:00,20:00-21:00", contact="discord.gg/fatih"),
-            Coach(name="Gizem",  game="LoL",      level="Pro",    availability="16:00-17:00,21:00-22:00", contact="discord.gg/gizem")
-        ]
-        db.session.bulk_save_objects(sample_coaches)
-        db.session.commit()
+stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
 @app.route("/")
 def index():
-    return render_template("index.html", games=games, packages=packages, time_slots=TIME_SLOTS)
+    coaches = Coach.query.all()
+    return render_template("index.html", coaches=coaches)
 
-@app.route("/checkout", methods=["POST"])
-def checkout():
-    game = request.form.get("game")
-    pkg = request.form.get("package")
-    time_slot = request.form.get("time_slot")
+@app.route("/coach/<int:coach_id>")
+def coach_profile(coach_id):
+    coach = Coach.query.get_or_404(coach_id)
+    form = FeedbackForm()
+    return render_template("coach_profile.html", coach=coach, form=form)
 
-    package = next((p for p in packages if p["name"] == pkg), None)
-    if not game or not package or time_slot not in TIME_SLOTS:
-        return "Geçersiz seçim.", 400
+@app.route("/checkout/<int:coach_id>", methods=["POST"])
+def checkout(coach_id):
+    coach = Coach.query.get_or_404(coach_id)
+    user_id = session.get("user_id", 1)
+    price = calculate_price(coach.level, is_first_purchase(user_id))
 
-    session = stripe.checkout.Session.create(
+    session_data = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
             "price_data": {
                 "currency": "try",
-                "product_data": {"name": f"{game} – {pkg} Koçluk Paketi"},
-                "unit_amount": package["price_tl"] * 100
+                "product_data": {
+                    "name": f"{coach.game} - {coach.level}",
+                    "description": f"Koç: {coach.name}"
+                },
+                "unit_amount": int(price * 100)
             },
             "quantity": 1
         }],
         mode="payment",
-        success_url=request.url_root + "success?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=request.url_root + "cancel"
+        success_url=url_for("waiting_room", coach_id=coach.id, _external=True),
+        cancel_url=url_for("index", _external=True)
     )
 
-    order = Order(session_id=session.id, game=game, package=pkg, time_slot=time_slot)
-    db.session.add(order)
+    new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=session_data.id)
+    db.session.add(new_order)
     db.session.commit()
 
-    return redirect(session.url, code=303)
+    return redirect(session_data.url)
 
-@app.route("/success")
-def success():
-    session_id = request.args.get("session_id")
-    order = Order.query.filter_by(session_id=session_id).first_or_404()
+@app.route("/waiting/<int:coach_id>")
+def waiting_room(coach_id):
+    coach = Coach.query.get_or_404(coach_id)
+    zoom_link = create_zoom_meeting(coach.zoom_email)
+    return redirect(zoom_link)
 
-    candidates = Coach.query.filter_by(game=order.game, level=order.package).all()
-    available = [c for c in candidates if order.time_slot in c.availability.split(",")]
+@app.route("/submit-feedback/<int:coach_id>", methods=["POST"])
+def submit_feedback(coach_id):
+    form = FeedbackForm()
+    if form.validate_on_submit():
+        feedback = Feedback(coach_id=coach_id, rating=form.rating.data, comment=form.comment.data)
+        db.session.add(feedback)
+        db.session.commit()
+    return redirect(url_for("coach_profile", coach_id=coach_id))
 
-    return render_template("success.html", coach_list=available, time_slot=order.time_slot)
-
-@app.route("/cancel")
-def cancel():
-    return render_template("cancel.html")
+@app.route("/admin")
+def admin_dashboard():
+    if not session.get("is_admin"):
+        return redirect(url_for("index"))
+    coaches = Coach.query.all()
+    orders = Order.query.all()
+    feedbacks = Feedback.query.all()
+    return render_template("admin_dashboard.html", coaches=coaches, orders=orders, feedbacks=feedbacks)
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        seed_coaches()
-    app.run(host="0.0.0.0", debug=True)
+    app.run(debug=True)

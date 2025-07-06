@@ -1,5 +1,6 @@
-Flask>=2.3
-stripe>=5.0
-gunicorn>=20.1
-python-dotenv>=1.0
-Flask-SQLAlchemy>=3.0
+Flask
+Flask-WTF
+Flask-SQLAlchemy
+stripe
+requests
+gunicorn

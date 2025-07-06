@@ -35,7 +35,7 @@ def checkout(coach_id):
 
     try:
         # ✅ Stripe Checkout oturumu oluştur
-        session_data = stripe.checkout.Session.create(
+        checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
                 "price_data": {
@@ -54,11 +54,11 @@ def checkout(coach_id):
         )
 
         # ✅ Siparişi kaydet
-        new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=session_data.id)
+        new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=checkout_session.id)
         db.session.add(new_order)
         db.session.commit()
 
-        return redirect(session_data.url)
+        return redirect(checkout_session.url)
 
     except Exception as e:
         return f"Stripe Checkout hatası: {str(e)}"

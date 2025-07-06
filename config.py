@@ -1,5 +1,7 @@
+import os
+
 class Config:
-    SECRET_KEY = "gizli"
+    SECRET_KEY = "gizli-anahtar"
     SQLALCHEMY_DATABASE_URI = "sqlite:///db.sqlite3"
-    STRIPE_SECRET_KEY = "sk_test_..."
-    ZOOM_JWT_TOKEN = "your_zoom_jwt_token"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")

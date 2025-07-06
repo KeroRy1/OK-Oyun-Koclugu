@@ -1,65 +1,63 @@
 body {
-    font-family: 'Segoe UI', sans-serif;
     margin: 0;
-    padding: 0;
-    background: #121212;
-    color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
 }
 
-header {
-    background: #1f1f1f;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    color: white;
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
 }
 
-main {
-    padding: 1rem;
+header h1 {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-.coach-container {
-    padding: 1rem;
+.form-group {
+    margin-bottom: 20px;
 }
 
-.packages {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1rem;
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+select {
+    width: 100%;
+    padding: 8px;
+    font-size: 1em;
 }
 
 .package {
-    background: #1e1e2f;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 1rem;
-    width: 100%;
-    max-width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background: #fafafa;
 }
 
 .package h3 {
-    color: #b388ff;
+    margin-top: 0;
 }
 
 .package ul {
-    list-style: none;
-    padding: 0;
+    padding-left: 20px;
 }
 
-.package button {
-    margin-top: 1rem;
-    background: #7c4dff;
+button {
+    background-color: #3498db;
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 10px 15px;
+    font-size: 1em;
     border-radius: 4px;
     cursor: pointer;
 }
 
-@media (max-width: 600px) {
-    .packages {
-        flex-direction: column;
-    }
+button:hover {
+    background-color: #2980b9;
 }

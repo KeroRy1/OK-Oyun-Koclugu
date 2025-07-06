@@ -34,6 +34,7 @@ def checkout(coach_id):
     price = calculate_price(coach.level, is_first_purchase(user_id))
 
     try:
+        # ✅ Stripe Checkout oturumu oluştur
         session_data = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
@@ -52,6 +53,7 @@ def checkout(coach_id):
             cancel_url=url_for("index", _external=True)
         )
 
+        # ✅ Siparişi kaydet
         new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=session_data.id)
         db.session.add(new_order)
         db.session.commit()

@@ -1,9 +1,11 @@
 services:
   - type: web
-    name: kocluk-platformu
+    name: turkce-kocluk
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
-      - key: FLASK_ENV
-        value: production
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_YOUR_SECRET_KEY
+      - key: STRIPE_PUBLISHABLE_KEY
+        value: pk_test_YOUR_PUBLISHABLE_KEY

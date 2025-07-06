@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: turkce-kocluk
+    name: koçluk-platformu
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ""
     startCommand: gunicorn app:app
     envVars:
+      - key: FLASK_ENV
+        value: production
       - key: STRIPE_SECRET_KEY
-        value: sk_test_YOUR_SECRET_KEY
+        value: sk_test_...  # kendi Stripe anahtarınla değiştir
+      - key: ZOOM_JWT_TOKEN
+        value: eyJhbGciOi...  # kendi Zoom JWT token'ınla değiştir

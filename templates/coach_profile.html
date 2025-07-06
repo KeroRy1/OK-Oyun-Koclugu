@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ coach.name }} – {{ coach.game }} ({{ coach.level }})</h2>
+<p>Ortalama Puan: {{ coach.rating or "Henüz yok" }}</p>
+
+<form action="{{ url_for('checkout', coach_id=coach.id) }}" method="POST">
+    <button type="submit">Satın Al</button>
+</form>
+
+<h3>Yorum Bırak</h3>
+<form action="{{ url_for('submit_feedback', coach_id=coach.id) }}" method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.rating.label }} {{ form.rating() }}<br>
+    {{ form.comment.label }} {{ form.comment(rows=3) }}<br>
+    {{ form.submit() }}
+</form>
+{% endblock %}

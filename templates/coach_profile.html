@@ -1,19 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>{{ coach.name }} – {{ coach.game }} ({{ coach.level }})</h2>
+<div class="coach-container">
+    <h2>{{ coach.name }} – {{ coach.game }}</h2>
 
-<form action="{{ url_for('checkout', coach_id=coach.id) }}" method="POST">
-    <label for="time">Saat Seçimi:</label>
-    <select name="time" required>
-        {% for hour in range(8, 24) %}
-            <option value="{{ "%02d:00" % hour }}">{{ "%02d:00" % hour }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" style="float: right;">Satın Al</button>
-</form>
+    <form action="{{ url_for('checkout', coach_id=coach.id) }}" method="POST">
+        <label for="time">🕒 Saat Seçimi:</label>
+        <select name="time" required>
+            {% for hour in range(8, 24) %}
+                <option value="{{ "%02d:00" % hour }}">{{ "%02d:00" % hour }}</option>
+            {% endfor %}
+        </select>
 
-<h3>Geri Bildirim</h3>
-<form action="{{ url_for('submit_feedback', coach_id=coach.id) }}" method="POST">
-    {{ form.hidden_tag() }}
-    {{ form.rating.label }} {{ form.rating() }}
-    {{ form.comment.label }}
+        <div class="packages">
+            {% for pkg in ['Basit', 'Orta', 'Pro', 'Oyun Ustası'] %}
+            <div class="package">
+                <h3>{{ pkg }} – {{ {'Basit':400, 'Orta':600, 'Pro':1000, 'Oyun Ustası':1500}[pkg] }} TL</h3>
+                <ul>
+                    <li>Canlı Ders</li>
+                    {% if pkg in ['Orta', 'Pro', 'Oyun Ustası'] %}<li>PDF Rehber</li>{% endif %}
+                    {% if pkg in ['Pro', 'Oyun Ustası'] %}<li>Özel Koçluk</li>{% endif %}
+                    {% if pkg == 'Oyun Ustası' %}<li>1v1 Analiz</li>{% endif %}
+                </ul>
+                <input type="hidden" name="package" value="{{ pkg }}">
+                <button type="submit">Satın Al</button>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    <h3>💬 Geri Bildirim</h3>
+    <form action="{{ url_for('submit_feedback', coach_id=coach.id) }}" method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.rating.label }} {{ form.rating() }}
+        {{ form.comment.label }} {{ form.comment(rows=3) }}
+        {{ form.submit() }}
+    </form>
+</div>
+{% endblock %}

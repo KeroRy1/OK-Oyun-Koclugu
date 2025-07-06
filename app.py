@@ -12,7 +12,7 @@ db.init_app(app)
 
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
-# ✅ Veritabanı tablolarını oluştur
+# Veritabanı tablolarını oluştur
 with app.app_context():
     db.create_all()
 
@@ -30,11 +30,10 @@ def coach_profile(coach_id):
 @app.route("/checkout/<int:coach_id>", methods=["POST"])
 def checkout(coach_id):
     coach = Coach.query.get_or_404(coach_id)
-    user_id = session.get("user_id", 1)  # Geliştirme için sabit kullanıcı
+    user_id = session.get("user_id", 1)
     price = calculate_price(coach.level, is_first_purchase(user_id))
 
     try:
-        # ✅ Stripe Checkout oturumu oluştur
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[{
@@ -53,7 +52,6 @@ def checkout(coach_id):
             cancel_url=url_for("index", _external=True)
         )
 
-        # ✅ Siparişi kaydet
         new_order = Order(user_id=user_id, coach_id=coach.id, price=price, session_id=checkout_session.id)
         db.session.add(new_order)
         db.session.commit()
@@ -90,7 +88,6 @@ def admin_dashboard():
     feedbacks = Feedback.query.all()
     return render_template("admin_dashboard.html", coaches=coaches, orders=orders, feedbacks=feedbacks)
 
-# ✅ Render uyumlu çalıştırma
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

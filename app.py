@@ -4,12 +4,17 @@ from forms import FeedbackForm
 from utils import calculate_price, is_first_purchase, create_zoom_meeting
 from config import Config
 import stripe
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
+
+# ✅ Tabloları uygulama başlarken bir kez oluştur
+with app.app_context():
+    db.create_all()
 
 @app.route("/")
 def index():
@@ -76,12 +81,7 @@ def admin_dashboard():
     feedbacks = Feedback.query.all()
     return render_template("admin_dashboard.html", coaches=coaches, orders=orders, feedbacks=feedbacks)
 
+# ✅ Render uyumlu çalıştırma
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-@app.before_first_request
-def create_tables():
-    from models import db
-    db.create_all()
